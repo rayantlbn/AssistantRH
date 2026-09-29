@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: assistant-rh-postgres
+    environment:
+      POSTGRES_DB: assistant_rh
+      POSTGRES_USER: assistant_rh
+      POSTGRES_PASSWORD: assistant_rh
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assistant_rh -d assistant_rh"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
