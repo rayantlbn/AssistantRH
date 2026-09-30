@@ -35,17 +35,20 @@ flowchart LR
 
 **Valeur métier :** élevée. C'est le cœur du problème client, et la base de toutes les phases suivantes.
 
-### Planning (7 jours)
+### Planning (8 jours)
 
 | Jour | Thème | Livrable |
 |------|-------|----------|
 | 1 | Vision produit | `docs/mvp.md`, `docs/cahier-des-charges.md`, `docs/roadmap.md` |
 | 2 | Conception métier | `docs/domain.md` : entités, attributs, relations, règles, diagramme Mermaid |
 | 3 | Architecture technique | `docs/architecture.md` : frontend → API → PostgreSQL, puis place des futurs modules IA |
-| 4 | Génération backend | Entités JPA, repositories, services, DTO, controllers pour Candidate, JobOffer, Application |
-| 5 | CRUD fonctionnel | Endpoints testés via Swagger : backend V1 fonctionnel |
-| 6 | Frontend | Application web : tableau de bord, liste et détail des candidats (sans IA, design simple) |
-| 7 | Démo interne | Scénario : tableau de bord (connexion si livrée) → offre → candidat → association → suivi |
+| 4 | Modèle de données | Entités JPA, énumérations, repositories, tests d'intégration contre PostgreSQL |
+| 5 | Couche métier | Services, DTO, validation, mappers MapStruct, exceptions et gestionnaire d'erreurs, tests des règles métier |
+| 6 | API REST et upload de CV | Controllers REST, Swagger, tableau de bord, stockage et upload des CV (PDF, 5 Mo), tests MockMvc |
+| 7 | Frontend | Application web : tableau de bord, liste et détail des candidats (sans IA, design simple) |
+| 8 | Démo interne | Scénario : tableau de bord (connexion si livrée) → offre → candidat → association → suivi |
+
+Le planning initial prévoyait le frontend au Jour 6. Les Jours 4 et 5 ont été consacrés à un socle backend complet et testé (modèle de données puis couche métier), les controllers ont donc été regroupés au Jour 6 : le frontend démarre au Jour 7 sur une API stable et documentée, au lieu de simuler des données.
 
 **Sortie de phase :** démo interne réussie, puis premières PME pilotes sur de vrais recrutements.
 
