@@ -31,6 +31,8 @@ build/
 .env
 .env.*
 !.env.example
+# Configuration Vite sans secret (URL de l'API locale), versionnée volontairement
+!.env.development
 
 ### Fichiers uploadés (données personnelles) ###
 uploads/
