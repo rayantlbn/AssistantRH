@@ -29,11 +29,16 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/assistant_rh
       DB_USERNAME: assistant_rh
       DB_PASSWORD: assistant_rh
+      UPLOAD_DIR: /app/uploads
     ports:
       - "8080:8080"
+    volumes:
+      # Les CV survivent à la recréation du conteneur
+      - uploads-data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres-data:
+  uploads-data:

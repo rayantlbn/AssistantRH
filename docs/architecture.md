@@ -382,41 +382,14 @@ Usage :
 | Développement (backend lancé avec Maven) | `docker compose -f infra/docker-compose.yml up -d`, puis `./mvnw spring-boot:run` |
 | Tout dans Docker | `docker compose -f infra/docker-compose.yml --profile full up -d --build` |
 
-Le backend lit sa configuration dans des variables d'environnement (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`, et `UPLOAD_DIR` à venir). Aucun secret n'est écrit dans le code (SEC-04). Les identifiants PostgreSQL du compose sont des valeurs de développement.
+Le backend lit sa configuration dans des variables d'environnement (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`, `UPLOAD_DIR`, `COMPANY_NAME`). Aucun secret n'est écrit dans le code (SEC-04). Les identifiants PostgreSQL du compose sont des valeurs de développement.
 
-Stockage des CV dans Docker. En l'état, deux problèmes empêcheraient l'upload de fonctionner dans le conteneur :
+Stockage des CV dans Docker (en place depuis le Jour 6) :
 
-- le conteneur tourne avec l'utilisateur non-root `spring`, qui ne peut pas écrire dans `/app` (propriété de root), donc ne peut pas créer `uploads/` ;
-- aucun volume n'est prévu : les fichiers seraient perdus à chaque recréation du conteneur.
-
-Corrections à appliquer en même temps que l'implémentation de l'upload.
-
-Dans `backend/assistant-rh-api/Dockerfile`, étape runtime, créer le dossier et le donner à `spring` avant de changer d'utilisateur :
-
-```dockerfile
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-RUN useradd --system --uid 1001 spring \
-    && mkdir -p /app/uploads \
-    && chown spring /app/uploads
-USER spring
-```
-
-Dans `infra/docker-compose.yml`, service `api` : fixer l'emplacement et monter un volume nommé.
-
-```yaml
-  api:
-    environment:
-      UPLOAD_DIR: /app/uploads
-    volumes:
-      - uploads-data:/app/uploads
-
-volumes:
-  postgres-data:
-  uploads-data:
-```
-
-Un volume nommé créé par Docker reprend le propriétaire du dossier de l'image (`spring`), l'écriture fonctionne donc sans autre réglage. En développement hors Docker, `uploads/` est créé dans `backend/assistant-rh-api/` et ignoré par Git.
+- le conteneur tourne avec l'utilisateur non-root `spring`, propriétaire du seul dossier où l'application écrit, `/app/uploads` (créé dans le `Dockerfile`) ;
+- le service `api` fixe `UPLOAD_DIR=/app/uploads` et y monte le volume nommé `uploads-data` : les fichiers survivent à la recréation du conteneur ;
+- un volume nommé créé par Docker reprend le propriétaire du dossier de l'image (`spring`), l'écriture fonctionne sans autre réglage ;
+- en développement hors Docker, `uploads/` est créé dans `backend/assistant-rh-api/` au premier upload et ignoré par Git.
 
 Le frontend aura son propre `Dockerfile` et un service dans le même compose au Jour 6.
 

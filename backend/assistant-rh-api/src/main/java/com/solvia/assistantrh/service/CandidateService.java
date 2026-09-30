@@ -96,7 +96,7 @@ public class CandidateService {
         CandidateEntity candidate = load(id);
         List<String> documentPaths = documentRepository.findPathsByCandidateId(id);
         candidateRepository.delete(candidate);
-        AfterCommit.run(() -> documentPaths.forEach(documentStorage::delete));
+        TransactionHooks.afterCommit(() -> documentPaths.forEach(documentStorage::delete));
         log.info("Candidate deleted id={}", id);
     }
 

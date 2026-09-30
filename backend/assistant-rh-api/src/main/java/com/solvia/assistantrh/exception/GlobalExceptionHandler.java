@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -84,6 +85,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return error(HttpStatus.BAD_REQUEST, new ApiError("INVALID_PARAMETER",
                 "Valeur invalide pour le paramètre « " + ex.getName() + " »."));
+    }
+
+    /** Fichier au-delà de spring.servlet.multipart.max-file-size (5 Mo), rejeté avant même d'atteindre le controller. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return error(HttpStatus.BAD_REQUEST, new ApiError("DOCUMENT_TOO_LARGE", "Le fichier dépasse la taille maximale de 5 Mo."));
     }
 
     @ExceptionHandler(Exception.class)
