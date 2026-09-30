@@ -6,6 +6,7 @@ import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.DocumentMapper;
 import com.solvia.assistantrh.repository.CandidateRepository;
 import com.solvia.assistantrh.repository.DocumentRepository;
+import com.solvia.assistantrh.storage.DocumentStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,8 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Structure du service documents. L'upload, le téléchargement et la gestion des fichiers sur disque
- * (DocumentStorage, docs/architecture.md section 8) arrivent au Jour 6.
+ * Documents des candidats : métadonnées en base, fichiers dans DocumentStorage (docs/architecture.md, section 8).
  */
 @Slf4j
 @Service
@@ -29,6 +29,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final CandidateRepository candidateRepository;
     private final DocumentMapper documentMapper;
+    private final DocumentStorage documentStorage;
     private final CurrentCompanyProvider currentCompanyProvider;
 
     @Transactional(readOnly = true)
@@ -44,9 +45,12 @@ public class DocumentService {
         return documentMapper.toResponse(load(id));
     }
 
-    /** Supprime les métadonnées. La suppression du fichier sur disque sera ajoutée avec DocumentStorage (Jour 6). */
+    /** Supprime les métadonnées, puis le fichier une fois la transaction validée. */
     public void delete(Long id) {
-        documentRepository.delete(load(id));
+        DocumentEntity document = load(id);
+        documentRepository.delete(document);
+        String path = document.getPath();
+        AfterCommit.run(() -> documentStorage.delete(path));
         log.info("Document deleted id={}", id);
     }
 

@@ -14,11 +14,13 @@ import com.solvia.assistantrh.mapper.CandidateMapper;
 import com.solvia.assistantrh.mapper.JobOfferMapper;
 import com.solvia.assistantrh.repository.ApplicationRepository;
 import com.solvia.assistantrh.repository.CandidateRepository;
+import com.solvia.assistantrh.repository.DocumentRepository;
 import com.solvia.assistantrh.repository.JobOfferRepository;
 import com.solvia.assistantrh.service.ApplicationService;
 import com.solvia.assistantrh.service.CandidateService;
 import com.solvia.assistantrh.service.CurrentCompanyProvider;
 import com.solvia.assistantrh.service.JobOfferService;
+import com.solvia.assistantrh.storage.DocumentStorage;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,7 +81,8 @@ class ConstraintRaceConditionTest {
     void candidate_uniqueViolationAfterExistsCheck_isTranslatedToDuplicateEmail() {
         CandidateRepository candidates = mock(CandidateRepository.class);
         CandidateMapper mapper = mock(CandidateMapper.class);
-        CandidateService service = new CandidateService(candidates, mapper, companyProvider);
+        CandidateService service = new CandidateService(candidates, mapper, companyProvider,
+                mock(DocumentRepository.class), mock(DocumentStorage.class));
         when(candidates.existsByCompanyIdAndEmail(anyLong(), anyString())).thenReturn(false);
         when(mapper.toEntity(any())).thenReturn(CandidateEntity.builder().firstName("Sara").lastName("Benali").email("sara@example.com").build());
         when(candidates.saveAndFlush(any())).thenThrow(violationOf("uk_candidates_company_email"));

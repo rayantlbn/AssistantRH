@@ -8,6 +8,8 @@ import com.solvia.assistantrh.exception.DuplicateCandidateEmailException;
 import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.CandidateMapper;
 import com.solvia.assistantrh.repository.CandidateRepository;
+import com.solvia.assistantrh.repository.DocumentRepository;
+import com.solvia.assistantrh.storage.DocumentStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
 
 import static com.solvia.assistantrh.service.TextNormalizer.normalizeEmail;
@@ -34,6 +37,8 @@ public class CandidateService {
     private final CandidateRepository candidateRepository;
     private final CandidateMapper candidateMapper;
     private final CurrentCompanyProvider currentCompanyProvider;
+    private final DocumentRepository documentRepository;
+    private final DocumentStorage documentStorage;
 
     public CandidateResponse create(CandidateRequest request) {
         CompanyEntity company = currentCompanyProvider.getCurrentCompany();
@@ -85,10 +90,13 @@ public class CandidateService {
 
     /**
      * Supprime le candidat ; ses candidatures (et leurs entretiens et commentaires) et ses documents sont supprimés
-     * par la base. La suppression des fichiers sur disque sera ajoutée avec l'upload (Jour 6).
+     * par la base, puis ses fichiers sont supprimés du stockage une fois la transaction validée.
      */
     public void delete(Long id) {
-        candidateRepository.delete(load(id));
+        CandidateEntity candidate = load(id);
+        List<String> documentPaths = documentRepository.findPathsByCandidateId(id);
+        candidateRepository.delete(candidate);
+        AfterCommit.run(() -> documentPaths.forEach(documentStorage::delete));
         log.info("Candidate deleted id={}", id);
     }
 
