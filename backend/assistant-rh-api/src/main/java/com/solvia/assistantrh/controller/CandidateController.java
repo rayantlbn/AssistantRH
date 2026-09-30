@@ -4,6 +4,10 @@ import com.solvia.assistantrh.dto.candidate.CandidateRequest;
 import com.solvia.assistantrh.dto.candidate.CandidateResponse;
 import com.solvia.assistantrh.service.CandidateService;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Candidats", description = "Personnes qui postulent")
 @RestController
 @RequestMapping("/api/candidates")
 @RequiredArgsConstructor
@@ -29,29 +34,34 @@ public class CandidateController {
     private final CandidateService candidateService;
 
     @GetMapping
-    public Page<CandidateResponse> findAll(@RequestParam(required = false) String search,
-                                           @PageableDefault(size = 20) Pageable pageable) {
+    @Operation(summary = "Liste paginée des candidats, du plus récent au plus ancien par défaut. Pagination : page (à partir de 0), size (20 par défaut, 100 max), sort (ex. createdAt,desc).")
+    public Page<CandidateResponse> findAll(@Parameter(description = "Texte recherché dans le prénom, le nom ou l'email") @RequestParam(required = false) String search,
+                                           @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         return candidateService.findAll(search, pageable);
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Détail d'un candidat")
     public CandidateResponse findById(@PathVariable Long id) {
         return candidateService.findById(id);
     }
 
     @PostMapping
+    @Operation(summary = "Création (email unique par entreprise)")
     public ResponseEntity<CandidateResponse> create(@Valid @RequestBody CandidateRequest request) {
         CandidateResponse created = candidateService.create(request);
         return ResponseEntity.created(Locations.of(created.id())).body(created);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Modification d'un candidat")
     public CandidateResponse update(@PathVariable Long id, @Valid @RequestBody CandidateRequest request) {
         return candidateService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Suppression, avec ses candidatures et documents")
     public void delete(@PathVariable Long id) {
         candidateService.delete(id);
     }
