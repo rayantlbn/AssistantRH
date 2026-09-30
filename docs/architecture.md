@@ -118,7 +118,12 @@ Relations JPA :
 - Les suppressions en cascade décrites dans [domain.md](domain.md) sont portées par les clés étrangères (`@OnDelete(action = CASCADE)`), pour que la base reste cohérente même en cas de suppression directe.
 - Les fichiers sur disque ne sont pas concernés par la cascade SQL : le service qui supprime un candidat ou un document supprime aussi les fichiers, une fois la transaction validée.
 
-L'entreprise : en Phase 1 il n'y en a qu'une. Au démarrage, un initialiseur dans `config/` la crée si la table est vide (nom lu dans `app.company.name`). Les services obtiennent l'entreprise courante par un composant unique, `CurrentCompanyProvider`, et ne la cherchent jamais eux-mêmes. C'est ce composant qui changera à l'arrivée de la connexion (voir section 10).
+L'entreprise : en Phase 1 il n'y en a qu'une, et aucune interface ne permet d'en créer.
+
+- `config/DefaultCompanyInitializer` (marqué `// Phase 1 only`) s'exécute à chaque démarrage. Si la table `companies` est vide, il crée une entreprise nommée d'après `app.company.name` (variable `COMPANY_NAME`, « Mon entreprise » par défaut). Si une entreprise existe déjà, il ne fait rien : les redémarrages n'en créent jamais une deuxième.
+- C'est pourquoi une entreprise apparaît en base sans que personne ne l'ait créée : c'est voulu, c'est l'entreprise de démonstration.
+- Les services obtiennent l'entreprise courante par un composant unique, `CurrentCompanyProvider` (l'entreprise de plus petit id), et ne la cherchent jamais eux-mêmes.
+- À l'arrivée de la connexion (S1), l'initialiseur sera supprimé et `CurrentCompanyProvider` lira l'entreprise de l'utilisateur connecté (voir section 10).
 
 Dépendances Maven à ajouter au Jour 4 : MapStruct (avec `lombok-mapstruct-binding`, pour que Lombok et MapStruct fonctionnent ensemble) et springdoc-openapi (Swagger UI, exigence QUA-01). Rien d'autre.
 
@@ -228,7 +233,7 @@ Les fichiers ne suivent pas le CRUD générique : un document se crée par uploa
 | GET | `/api/documents/{id}` | Téléchargement du fichier | 200, 404 |
 | DELETE | `/api/documents/{id}` | Suppression de l'entité et du fichier | 204, 404 |
 
-Upload : deux parties, `file` (obligatoire) et `type` (`CV` par défaut). Le serveur vérifie que le fichier est un PDF (type annoncé et signature `%PDF` en début de fichier) et qu'il fait au plus 5 Mo. Sinon, 400.
+Upload : deux parties, `file` (obligatoire) et `type` (`CV` par défaut). Le serveur vérifie que le fichier est un PDF (type annoncé et signature `%PDF` en début de fichier) et qu'il fait au plus 5 Mo. Sinon, 400. Règles de stockage : section 8.
 
 Téléchargement : réponse binaire avec `Content-Type: application/pdf` et `Content-Disposition: attachment; filename="<filename>"`.
 
@@ -238,53 +243,54 @@ Aucun OCR ni parsing en Phase 1.
 
 ## 5. Gestion des erreurs
 
-Toutes les erreurs sont traitées à un seul endroit : `GlobalExceptionHandler` (`@RestControllerAdvice`, package `exception/`). Les controllers ne font jamais de `try/catch` pour construire une réponse d'erreur.
+Toutes les erreurs sont traitées à un seul endroit : `GlobalExceptionHandler` (`@RestControllerAdvice`, package `exception/`). Les controllers et les services ne construisent jamais eux-mêmes une réponse d'erreur.
 
-Format de réponse : le standard Problem Details (RFC 9457), pris en charge nativement par Spring (`ProblemDetail`), complété d'un code métier stable que le frontend peut utiliser.
+Format de réponse : un objet `ApiError` avec un `code` stable (en anglais, destiné au frontend) et un `message` lisible (en français, affichable à l'utilisateur).
 
 ```json
 {
-  "type": "about:blank",
-  "title": "Conflict",
-  "status": 409,
-  "detail": "Ce candidat a déjà une candidature pour cette offre.",
-  "instance": "/api/applications",
-  "code": "DUPLICATE_APPLICATION"
+  "code": "DUPLICATE_APPLICATION",
+  "message": "Ce candidat a déjà une candidature pour cette offre."
 }
 ```
 
-Pour les erreurs de validation, un champ `errors` liste les champs en faute :
+Pour les erreurs de validation, un champ `errors` liste les champs en faute. Il est absent des autres réponses.
 
 ```json
 {
-  "title": "Bad Request",
-  "status": 400,
-  "detail": "La requête contient des champs invalides.",
   "code": "VALIDATION_ERROR",
-  "errors": [ { "field": "email", "message": "doit être une adresse email valide" } ]
+  "message": "La requête contient des champs invalides.",
+  "errors": [ { "field": "email", "message": "doit être une adresse électronique syntaxiquement correcte" } ]
 }
 ```
 
 Correspondance :
 
-| HTTP | Quand | Exceptions |
-|------|-------|------------|
-| 400 BAD_REQUEST | Données invalides : champ manquant, mauvais format, fichier refusé, règle sur l'avis d'entretien | `MethodArgumentNotValidException`, `InvalidRequestException`, `InvalidDocumentException`, `MaxUploadSizeExceededException` |
-| 404 NOT_FOUND | Ressource introuvable, dans l'URL ou référencée dans le corps | `ResourceNotFoundException` |
-| 409 CONFLICT | La requête est valide mais contredit une règle métier ou l'état actuel des données | `DuplicateApplicationException`, `DuplicateCandidateEmailException`, `InvalidStatusTransitionException`, `JobOfferNotOpenException`, `JobOfferHasApplicationsException`, `InterviewNotAllowedException` |
-| 500 INTERNAL_SERVER_ERROR | Erreur imprévue | toute autre exception |
+| HTTP | Quand | Exceptions | Codes |
+|------|-------|------------|-------|
+| 400 BAD_REQUEST | Données invalides : champ manquant, mauvais format, JSON illisible, règle non exprimable en annotation | `MethodArgumentNotValidException`, `HandlerMethodValidationException`, `ConstraintViolationException` (validation des services), `HttpMessageNotReadableException`, `InvalidRequestException` | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `APPLIED_AT_IN_FUTURE`, `APPLICATION_ID_REQUIRED`, `INTERVIEW_NOT_HELD`, `OUTCOME_REQUIRED` |
+| 404 NOT_FOUND | Ressource introuvable, dans l'URL ou référencée dans le corps | `ResourceNotFoundException` | `RESOURCE_NOT_FOUND` |
+| 409 CONFLICT | Requête valide mais contraire à une règle métier ou à l'état des données | `DuplicateApplicationException`, `DuplicateCandidateEmailException`, `BusinessRuleException` | `DUPLICATE_APPLICATION`, `DUPLICATE_CANDIDATE_EMAIL`, `JOB_OFFER_NOT_OPEN`, `JOB_OFFER_CLOSED`, `INVALID_STATUS_TRANSITION`, `JOB_OFFER_HAS_APPLICATIONS`, `APPLICATION_CLOSED` |
+| 500 INTERNAL_SERVER_ERROR | Erreur imprévue | toute autre exception | `INTERNAL_ERROR` |
+
+`DuplicateApplicationException` et `DuplicateCandidateEmailException` héritent de `BusinessRuleException`, qui porte le code. Les erreurs de Spring MVC qui ont déjà leur propre statut (route inconnue, méthode non supportée…) gardent ce statut, avec le code `HTTP_<statut>` : elles ne sont pas transformées en 500.
+
+Erreur 500 : la réponse est toujours exactement
+
+```json
+{ "code": "INTERNAL_ERROR", "message": "Une erreur interne est survenue" }
+```
+
+Le message de l'exception (SQL, `PSQLException`, nom de classe, stack trace) n'est jamais renvoyé au client (SEC-05). Le détail complet est écrit dans les logs serveur (`log.error("Unexpected error", ex)`) ; voir section 10 pour les données personnelles que ces logs peuvent contenir.
 
 Exemple de 409 : `DuplicateApplicationException`
 
 - Cas métier : on tente de créer une candidature pour un candidat qui en a déjà une sur la même offre, quel que soit son statut.
 - Référence : APP-02, et la contrainte d'unicité `(candidate_id, job_offer_id)` de [domain.md](domain.md#application).
-- Le service vérifie l'existence avant d'insérer et lève `DuplicateApplicationException`. Si deux requêtes arrivent en même temps, c'est la contrainte d'unicité en base qui bloque : la `DataIntegrityViolationException` correspondante est convertie en la même réponse 409.
+- Double vérification dans `ApplicationService` : un `existsByCandidateIdAndJobOfferId` renvoie l'erreur métier dans le cas normal ; si deux requêtes passent ce contrôle en même temps, la contrainte d'unicité en base rejette la seconde, et la `DataIntegrityViolationException` est traduite en la même erreur 409.
+- Seule la violation de la contrainte attendue (identifiée par son nom) est traduite. Toute autre violation remonte en 500, pour ne pas masquer un vrai problème.
 
-Autres règles :
-
-- Les exceptions métier héritent d'une classe commune `BusinessException` qui porte le code (`DUPLICATE_APPLICATION`…) et le statut HTTP. Le handler n'a donc qu'une méthode pour toutes.
-- Une erreur 500 renvoie un message générique. La trace complète est écrite dans les logs, jamais dans la réponse (SEC-05).
-- Les messages `detail` sont en français, les `code` en anglais et stables dans le temps.
+Le même principe s'applique à l'email d'un candidat (`uk_candidates_company_email`) et à la suppression d'une offre qui a des candidatures (`fk_applications_job_offer`, OFF-06).
 
 ## 6. DTO
 
@@ -304,7 +310,14 @@ Pourquoi :
 - Le client ne peut pas envoyer de champs qu'il ne devrait pas contrôler (`id`, `createdAt`, `statusChangedAt`, `path`).
 - On évite les boucles infinies de sérialisation et le chargement accidentel de relations.
 
-Les DTO sont des `record` Java : immuables, sans Lombok. La validation utilise Jakarta Validation (`@NotBlank`, `@Email`, `@Size`, `@NotNull`) avec les longueurs de [domain.md](domain.md). Les règles qui dépendent de la base (email en double, statut de l'offre) sont dans les services, pas dans les annotations.
+Les DTO sont des `record` Java : immuables, sans Lombok. La validation utilise Jakarta Validation (`@NotBlank`, `@Email`, `@Size`, `@NotNull`, `@PastOrPresent`) avec les longueurs de [domain.md](domain.md), pour échouer en 400 avant d'atteindre une erreur de longueur de colonne en base. Les règles qui dépendent de la base ou de l'horloge (email en double, statut de l'offre, date d'entretien) sont dans les services, pas dans les annotations.
+
+Nettoyage avant validation : `CandidateRequest` retire les espaces de début et de fin de l'email dans son constructeur, donc avant la validation. Un email copié-collé depuis un CV ou une signature (espace parasite) est accepté au lieu d'être rejeté en 400. La mise en minuscules et le nettoyage des autres champs sont faits par le service.
+
+Où la validation est déclenchée :
+
+- Jour 5 (pas encore de controllers) : les services portent `@Validated` et leurs paramètres `@Valid`. Une requête invalide lève une `ConstraintViolationException`, traduite en 400.
+- **Jour 6 : retirer `@Validated` et `@Valid` des services** quand les controllers porteront `@Valid` sur les corps de requête. Sinon chaque requête serait validée deux fois, avec deux formats d'erreur possibles pour le même problème.
 
 Les entités utilisent Lombok (`@Getter`, `@Setter`, `@NoArgsConstructor`) mais jamais `@Data`, dont le `equals`/`hashCode` pose problème avec JPA.
 
@@ -334,9 +347,24 @@ Règles :
 Pour le MVP, les fichiers sont stockés sur le disque local, dans un dossier `uploads/`. Pas de S3, pas de MinIO, pas de cloud.
 
 - Emplacement configurable : `app.storage.upload-dir`, valeur par défaut `uploads` (relatif au dossier de lancement), surchargeable par la variable `UPLOAD_DIR`.
-- Organisation : `uploads/candidates/{candidateId}/{uuid}.pdf`. Le nom sur disque est généré par le serveur. Le nom d'origine est conservé dans `Document.filename`, uniquement pour l'affichage.
-- `Document.path` contient le chemin relatif au dossier d'upload (`candidates/12/3f9c…pdf`), pour pouvoir déplacer le dossier sans modifier la base.
-- Taille limitée à 5 Mo par la configuration Spring (`spring.servlet.multipart.max-file-size`) et revérifiée par le service.
+- Organisation : `uploads/candidates/{candidateId}/{uuid}.pdf`.
+- `Document.path` contient le chemin relatif au dossier d'upload (`candidates/12/f4a7d3f2-….pdf`), pour pouvoir déplacer le dossier sans modifier la base.
+
+Règles de sécurité (implémentées avec l'upload, Jour 6) :
+
+| Règle | Détail |
+|-------|--------|
+| PDF uniquement | Type annoncé `application/pdf` et signature `%PDF-` dans les premiers octets. L'extension du nom d'origine n'est pas une preuve et n'est pas utilisée. |
+| Taille maximale 5 Mo | Limite de Spring (`spring.servlet.multipart.max-file-size=5MB`, `max-request-size` légèrement supérieur), revérifiée par le service. Au-delà : 400. Même limite que DOC-01 et [domain.md](domain.md#candidate-1---document). |
+| Nom physique = UUID | Le fichier est écrit sous un nom généré par le serveur (`UUID.randomUUID()` + `.pdf`, ex. `f4a7d3f2-9c1e-4b7a-8d2e-5a6b7c8d9e0f.pdf`). Le nom envoyé par le client n'est **jamais** utilisé pour construire un chemin. |
+| Nom d'origine en base | Conservé dans la colonne existante `DocumentEntity.filename`, uniquement pour l'affichage et l'en-tête `Content-Disposition` du téléchargement. |
+| Chemin vérifié | Le chemin final est normalisé puis on vérifie qu'il reste bien sous le dossier d'upload avant toute écriture, lecture ou suppression. |
+
+Objectifs :
+
+- **Path traversal** : un nom comme `../../etc/passwd` ou `..\config.pdf` ne peut pas faire sortir l'écriture du dossier d'upload, puisque le nom du client n'entre jamais dans le chemin.
+- **Caractères exotiques** : espaces, accents, caractères de contrôle ou noms réservés d'un système de fichiers n'ont aucun effet sur le disque ; ils ne vivent que dans la colonne `filename`.
+- **Collisions** : deux candidats qui envoient chacun `cv.pdf` produisent deux fichiers distincts, sans écrasement.
 - Le dossier `uploads/` est ignoré par Git. Il contient des données personnelles : on n'y met jamais de vrais CV en développement (RGPD-04).
 
 Tout accès au disque passe par une interface `DocumentStorage` (`store`, `load`, `delete`), avec une implémentation `LocalDocumentStorage`. Le reste du code ignore où sont les fichiers. Quand il faudra passer à un stockage objet (roadmap, Phase 2), on écrira une deuxième implémentation, sans toucher aux services ni aux controllers.
@@ -400,6 +428,12 @@ Schéma de base : `spring.jpa.hibernate.ddl-auto=update` pendant la Phase 1, pou
 ## 10. Sécurité
 
 Pas d'authentification en Phase 1 : la connexion est un Should Have (S1). L'API est ouverte et ne doit tourner qu'en local ou en démonstration, avec des données fictives.
+
+Logs et données personnelles :
+
+- Les logs de niveau `INFO` ne contiennent que des identifiants et des statuts (`Application created id=42`), jamais d'email, de téléphone ni de nom.
+- En revanche, `log.error("Unexpected error", ex)` écrit l'exception complète. Un message PostgreSQL peut y inclure une donnée personnelle, par exemple `Key (company_id, email)=(1, …) already exists`. Pour le MVP (démonstration interne, données fictives), ce risque est accepté : le message n'est pas filtré.
+- **Avant toute mise en production réelle**, une politique de rétention courte des logs applicatifs devra être définie et appliquée (durée de conservation, accès restreint, suppression automatique), conformément à la loi 09-08 et au RGPD. Voir les points d'extension de [domain.md](domain.md#points-dextension-futurs).
 
 Ce qui est déjà en place ou prévu dès la Phase 1 :
 
