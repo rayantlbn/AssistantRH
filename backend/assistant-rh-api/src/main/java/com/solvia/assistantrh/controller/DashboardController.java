@@ -22,8 +22,15 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/job-offers")
-    @Operation(summary = "Offres ouvertes avec le nombre de candidatures NEW, INTERVIEW, HIRED et REJECTED (DSH-01). "
-            + "Triées par titre ; pagination : page, size.")
+    @Operation(
+            summary = "Offres ouvertes avec le nombre de candidatures NEW, INTERVIEW, HIRED et REJECTED (DSH-01)",
+            description = """
+                    Pagination : page (à partir de 0) et size (20 par défaut, 100 max).
+
+                    **Tri non supporté** : les résultats sont toujours triés par titre d'offre (ordre alphabétique). \
+                    Le paramètre `sort` est accepté mais ignoré, car la requête est agrégée par offre.
+
+                    Seuls les statuts NEW, INTERVIEW, HIRED et REJECTED sont comptés ; SHORTLISTED et OFFER n'apparaissent pas.""")
     public Page<JobOfferDashboardResponse> openJobOffers(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         return dashboardService.getOpenJobOffers(pageable);
     }
