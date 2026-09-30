@@ -11,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponseException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,6 +57,14 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isEqualTo(
                 new ApiError("OUTCOME_REQUIRED", "Un avis est obligatoire dès qu'un compte rendu est saisi."));
+    }
+
+    @Test
+    void fileAboveMultipartLimit_returns400() {
+        ResponseEntity<ApiError> response = handler.handleMaxUploadSize(new MaxUploadSizeExceededException(5L * 1024 * 1024));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("DOCUMENT_TOO_LARGE");
     }
 
     @Test

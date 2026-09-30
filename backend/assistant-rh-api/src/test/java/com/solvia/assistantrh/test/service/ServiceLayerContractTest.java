@@ -3,6 +3,7 @@ package com.solvia.assistantrh.test.service;
 import com.solvia.assistantrh.service.ApplicationService;
 import com.solvia.assistantrh.service.CandidateService;
 import com.solvia.assistantrh.service.CommentService;
+import com.solvia.assistantrh.service.DashboardService;
 import com.solvia.assistantrh.service.DocumentService;
 import com.solvia.assistantrh.service.InterviewService;
 import com.solvia.assistantrh.service.JobOfferService;
@@ -25,7 +26,7 @@ class ServiceLayerContractTest {
 
     private static final List<Class<?>> SERVICES = List.of(
             CandidateService.class, JobOfferService.class, ApplicationService.class,
-            InterviewService.class, CommentService.class, DocumentService.class);
+            InterviewService.class, CommentService.class, DocumentService.class, DashboardService.class);
 
     @Test
     void noPublicServiceMethodReturnsAnEntity() {
