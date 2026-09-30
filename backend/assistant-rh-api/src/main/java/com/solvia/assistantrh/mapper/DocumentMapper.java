@@ -6,12 +6,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
- * Sens entité → réponse uniquement. L'entité est construite par DocumentService lors de l'upload (Jour 6),
+ * Sens entité → réponse uniquement. L'entité est construite par DocumentService lors de l'upload,
  * car path est généré par le serveur.
  */
 @Mapper(config = CentralMapperConfig.class)
 public interface DocumentMapper {
 
-    @Mapping(target = "candidateId", source = "candidate.id")
+    @Mapping(target = "fileName", source = "filename")
+    @Mapping(target = "uploadedAt", source = "createdAt")
     DocumentResponse toResponse(DocumentEntity entity);
 }

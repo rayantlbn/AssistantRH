@@ -196,7 +196,7 @@ Un `appliedAt` dans le futur renvoie un 400 (APP-08).
 |---------|-------|------|---------|
 | GET | `/api/dashboard/job-offers` | Offres `OPEN` avec le nombre de candidatures par statut (DSH-01) | 200 |
 
-Ce n'est pas une ressource CRUD mais une vue de lecture. Les comptages sont calculés en une seule requête SQL groupée, pas en chargeant les candidatures.
+Ce n'est pas une ressource CRUD mais une vue de lecture. Les comptages sont calculés en une seule requête SQL groupée, pas en chargeant les candidatures. Réponse paginée, triée par titre (le tri demandé est ignoré), chaque ligne contenant `jobOfferId`, `title`, `newCount`, `interviewCount`, `hiredCount`, `rejectedCount`.
 
 ### Interviews
 
@@ -237,7 +237,7 @@ Upload : deux parties, `file` (obligatoire) et `type` (`CV` par défaut). Le ser
 
 Téléchargement : réponse binaire avec `Content-Type: application/pdf` et `Content-Disposition: attachment; filename="<filename>"`.
 
-`DocumentResponse` : `id`, `filename`, `type`, `createdAt`. Le chemin de stockage (`path`) n'est jamais exposé.
+`DocumentResponse` : `id`, `fileName` (nom d'origine, colonne `filename`), `type`, `uploadedAt` (colonne `created_at`). Le chemin de stockage (`path`) n'est jamais exposé. La liste est le seul moyen de découvrir les documents d'un candidat avant de les télécharger.
 
 Aucun OCR ni parsing en Phase 1.
 
