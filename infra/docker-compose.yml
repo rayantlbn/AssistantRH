@@ -1,0 +1,39 @@
+# Nom de projet fixe : conserve le volume PostgreSQL existant (assistant-rh-api-v2_postgres-data)
+name: assistant-rh-api-v2
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: assistant-rh-postgres
+    environment:
+      POSTGRES_DB: assistant_rh
+      POSTGRES_USER: assistant_rh
+      POSTGRES_PASSWORD: assistant_rh
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assistant_rh -d assistant_rh"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Backend conteneurisé (optionnel en dev : lancer uniquement postgres et utiliser ./mvnw spring-boot:run)
+  api:
+    build:
+      context: ../backend/assistant-rh-api
+    container_name: assistant-rh-api
+    profiles: ["full"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/assistant_rh
+      DB_USERNAME: assistant_rh
+      DB_PASSWORD: assistant_rh
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
