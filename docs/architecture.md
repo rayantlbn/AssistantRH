@@ -314,10 +314,7 @@ Les DTO sont des `record` Java : immuables, sans Lombok. La validation utilise J
 
 Nettoyage avant validation : `CandidateRequest` retire les espaces de début et de fin de l'email dans son constructeur, donc avant la validation. Un email copié-collé depuis un CV ou une signature (espace parasite) est accepté au lieu d'être rejeté en 400. La mise en minuscules et le nettoyage des autres champs sont faits par le service.
 
-Où la validation est déclenchée :
-
-- Jour 5 (pas encore de controllers) : les services portent `@Validated` et leurs paramètres `@Valid`. Une requête invalide lève une `ConstraintViolationException`, traduite en 400.
-- **Jour 6 : retirer `@Validated` et `@Valid` des services** quand les controllers porteront `@Valid` sur les corps de requête. Sinon chaque requête serait validée deux fois, avec deux formats d'erreur possibles pour le même problème.
+Où la validation est déclenchée : dans la couche HTTP uniquement. Les controllers portent `@Valid` sur les corps de requête ; une requête invalide lève une `MethodArgumentNotValidException`, traduite en 400 `VALIDATION_ERROR`. Les services ne portent plus `@Validated` (retiré au Jour 6, il servait au Jour 5 en l'absence de controllers), pour éviter une double validation. Les règles qui ne s'expriment pas en annotation restent vérifiées par les services (`InvalidRequestException`, 400).
 
 Les entités utilisent Lombok (`@Getter`, `@Setter`, `@NoArgsConstructor`) mais jamais `@Data`, dont le `equals`/`hashCode` pose problème avec JPA.
 

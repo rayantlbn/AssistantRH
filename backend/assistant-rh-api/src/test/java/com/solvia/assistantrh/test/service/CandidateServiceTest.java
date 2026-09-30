@@ -5,7 +5,6 @@ import com.solvia.assistantrh.dto.candidate.CandidateResponse;
 import com.solvia.assistantrh.entity.enums.CandidateSource;
 import com.solvia.assistantrh.exception.DuplicateCandidateEmailException;
 import com.solvia.assistantrh.exception.ResourceNotFoundException;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,10 +79,4 @@ class CandidateServiceTest extends ServiceTestSupport {
         assertThat(created.email()).isEqualTo(email);
     }
 
-    @Test
-    void create_invalidEmail_isRejectedByValidation() {
-        assertThatThrownBy(() -> candidateService.create(new CandidateRequest("Sara", "Benali", "pas-un-email", null, null, null)))
-                .isInstanceOf(ConstraintViolationException.class)
-                .hasMessageContaining("email");
-    }
 }

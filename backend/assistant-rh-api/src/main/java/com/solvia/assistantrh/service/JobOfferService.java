@@ -9,7 +9,6 @@ import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.JobOfferMapper;
 import com.solvia.assistantrh.repository.ApplicationRepository;
 import com.solvia.assistantrh.repository.JobOfferRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,7 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +27,6 @@ import static com.solvia.assistantrh.service.TextNormalizer.trimToNull;
 @Slf4j
 @Service
 @Transactional
-@Validated
 @RequiredArgsConstructor
 public class JobOfferService {
 
@@ -49,7 +46,7 @@ public class JobOfferService {
     private final CurrentCompanyProvider currentCompanyProvider;
 
     /** Une offre est toujours créée au statut DRAFT, quel que soit le statut demandé. */
-    public JobOfferResponse create(@Valid JobOfferRequest request) {
+    public JobOfferResponse create(JobOfferRequest request) {
         JobOfferEntity jobOffer = jobOfferMapper.toEntity(request);
         normalize(jobOffer);
         jobOffer.setStatus(JobOfferStatus.DRAFT);
@@ -80,7 +77,7 @@ public class JobOfferService {
      * Modification et changement de statut. Une offre clôturée ne peut que repasser en OPEN,
      * sans autre modification (OFF-03, OFF-04). Un status absent laisse le statut inchangé.
      */
-    public JobOfferResponse update(Long id, @Valid JobOfferRequest request) {
+    public JobOfferResponse update(Long id, JobOfferRequest request) {
         JobOfferEntity jobOffer = load(id);
         JobOfferStatus current = jobOffer.getStatus();
         JobOfferStatus target = request.status() != null ? request.status() : current;

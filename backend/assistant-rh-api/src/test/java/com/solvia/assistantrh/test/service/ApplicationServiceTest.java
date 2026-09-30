@@ -9,7 +9,6 @@ import com.solvia.assistantrh.exception.BusinessRuleException;
 import com.solvia.assistantrh.exception.DuplicateApplicationException;
 import com.solvia.assistantrh.exception.InvalidRequestException;
 import com.solvia.assistantrh.service.ApplicationService;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -72,14 +71,15 @@ class ApplicationServiceTest extends ServiceTestSupport {
                 .extracting("code").isEqualTo("APPLIED_AT_IN_FUTURE");
     }
 
+    /** Sans passer par la couche HTTP, le service refuse lui-même une date réellement future. */
     @Test
-    void create_appliedAtInTheFuture_isRejectedByValidation() {
+    void create_appliedAtInTheFuture_isRefusedByService() {
         Instant tomorrow = Instant.now().plus(Duration.ofDays(1));
 
         assertThatThrownBy(() -> applicationService.create(
                 new ApplicationCreateRequest(createCandidate(), createOpenJobOffer(), tomorrow)))
-                .isInstanceOf(ConstraintViolationException.class)
-                .hasMessageContaining("appliedAt");
+                .isInstanceOf(InvalidRequestException.class)
+                .extracting("code").isEqualTo("APPLIED_AT_IN_FUTURE");
     }
 
     @Test

@@ -8,7 +8,6 @@ import com.solvia.assistantrh.exception.DuplicateCandidateEmailException;
 import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.CandidateMapper;
 import com.solvia.assistantrh.repository.CandidateRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,7 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.Locale;
 
@@ -27,7 +25,6 @@ import static com.solvia.assistantrh.service.TextNormalizer.trimToNull;
 @Slf4j
 @Service
 @Transactional
-@Validated
 @RequiredArgsConstructor
 public class CandidateService {
 
@@ -38,7 +35,7 @@ public class CandidateService {
     private final CandidateMapper candidateMapper;
     private final CurrentCompanyProvider currentCompanyProvider;
 
-    public CandidateResponse create(@Valid CandidateRequest request) {
+    public CandidateResponse create(CandidateRequest request) {
         CompanyEntity company = currentCompanyProvider.getCurrentCompany();
         String email = normalizeEmail(request.email());
         if (candidateRepository.existsByCompanyIdAndEmail(company.getId(), email)) {
@@ -71,7 +68,7 @@ public class CandidateService {
         return candidates.map(candidateMapper::toResponse);
     }
 
-    public CandidateResponse update(Long id, @Valid CandidateRequest request) {
+    public CandidateResponse update(Long id, CandidateRequest request) {
         CandidateEntity candidate = load(id);
         String email = normalizeEmail(request.email());
         if (candidateRepository.existsByCompanyIdAndEmailAndIdNot(candidate.getCompany().getId(), email, id)) {

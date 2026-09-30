@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class GlobalExceptionHandler {
         return validationError(errors);
     }
 
-    /** @Valid sur les paramètres des services (@Validated). */
+    /** Contraintes Bean Validation levées hors controller (ex. @PastOrPresent sur une entité à l'enregistrement). */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex) {
         List<ApiError.FieldError> errors = ex.getConstraintViolations().stream()
@@ -76,6 +77,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex) {
         return error(HttpStatus.BAD_REQUEST, new ApiError("MALFORMED_REQUEST", "Le corps de la requête est illisible."));
+    }
+
+    /** Paramètre d'URL ou de requête du mauvais type, ex. ?status=FOO ou /api/candidates/abc. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return error(HttpStatus.BAD_REQUEST, new ApiError("INVALID_PARAMETER",
+                "Valeur invalide pour le paramètre « " + ex.getName() + " »."));
     }
 
     @ExceptionHandler(Exception.class)

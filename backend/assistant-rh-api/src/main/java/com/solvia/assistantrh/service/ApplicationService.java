@@ -17,7 +17,6 @@ import com.solvia.assistantrh.repository.ApplicationRepository;
 import com.solvia.assistantrh.repository.CandidateRepository;
 import com.solvia.assistantrh.repository.JobOfferRepository;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,7 +26,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -41,7 +39,6 @@ import java.util.List;
 @Slf4j
 @Service
 @Transactional
-@Validated
 @RequiredArgsConstructor
 public class ApplicationService {
 
@@ -59,7 +56,7 @@ public class ApplicationService {
      * Crée une candidature au statut NEW sur une offre ouverte (APP-01, APP-05).
      * appliedAt vaut, à défaut, l'instant de création lu une seule fois sur l'horloge, comme statusChangedAt.
      */
-    public ApplicationResponse create(@Valid ApplicationCreateRequest request) {
+    public ApplicationResponse create(ApplicationCreateRequest request) {
         Long companyId = currentCompanyProvider.getCurrentCompanyId();
         CandidateEntity candidate = candidateRepository.findByIdAndCompanyId(request.candidateId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Candidat", request.candidateId()));
@@ -110,7 +107,7 @@ public class ApplicationService {
      * Change le statut et corrige la date de candidature. statusChangedAt n'est modifié
      * que si le statut change réellement (APP-07).
      */
-    public ApplicationResponse update(Long id, @Valid ApplicationUpdateRequest request) {
+    public ApplicationResponse update(Long id, ApplicationUpdateRequest request) {
         ApplicationEntity application = load(id);
         Instant now = clock.instant();
         requireNotInFuture(request.appliedAt(), now);

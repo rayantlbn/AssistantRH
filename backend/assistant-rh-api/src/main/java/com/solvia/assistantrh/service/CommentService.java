@@ -8,7 +8,6 @@ import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.CommentMapper;
 import com.solvia.assistantrh.repository.ApplicationRepository;
 import com.solvia.assistantrh.repository.CommentRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import static com.solvia.assistantrh.service.TextNormalizer.trimToNull;
 
@@ -26,7 +24,6 @@ import static com.solvia.assistantrh.service.TextNormalizer.trimToNull;
 @Slf4j
 @Service
 @Transactional
-@Validated
 @RequiredArgsConstructor
 public class CommentService {
 
@@ -37,7 +34,7 @@ public class CommentService {
     private final CommentMapper commentMapper;
     private final CurrentCompanyProvider currentCompanyProvider;
 
-    public CommentResponse create(Long applicationId, @Valid CommentRequest request) {
+    public CommentResponse create(Long applicationId, CommentRequest request) {
         ApplicationEntity application = loadApplication(applicationId);
         CommentEntity comment = commentMapper.toEntity(request);
         comment.setContent(trimToNull(comment.getContent()));

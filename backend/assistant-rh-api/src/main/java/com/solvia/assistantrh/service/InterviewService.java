@@ -11,7 +11,6 @@ import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.mapper.InterviewMapper;
 import com.solvia.assistantrh.repository.ApplicationRepository;
 import com.solvia.assistantrh.repository.InterviewRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
 import java.util.Set;
@@ -29,7 +27,6 @@ import static com.solvia.assistantrh.service.TextNormalizer.trimToNull;
 @Slf4j
 @Service
 @Transactional
-@Validated
 @RequiredArgsConstructor
 public class InterviewService {
 
@@ -45,7 +42,7 @@ public class InterviewService {
     /**
      * Planifie un entretien. Ne modifie pas le statut de la candidature ; interdit sur une candidature HIRED ou REJECTED.
      */
-    public InterviewResponse create(@Valid InterviewRequest request) {
+    public InterviewResponse create(InterviewRequest request) {
         if (request.applicationId() == null) {
             throw new InvalidRequestException("APPLICATION_ID_REQUIRED", "La candidature de l'entretien est obligatoire.");
         }
@@ -82,7 +79,7 @@ public class InterviewService {
      * Modifie l'entretien, y compris le compte rendu et l'avis, même si la candidature est terminée.
      * applicationId est ignoré : un entretien ne change pas de candidature.
      */
-    public InterviewResponse update(Long id, @Valid InterviewRequest request) {
+    public InterviewResponse update(Long id, InterviewRequest request) {
         InterviewEntity interview = load(id);
         interviewMapper.updateEntity(request, interview);
         normalize(interview);
