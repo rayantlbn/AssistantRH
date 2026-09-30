@@ -1,0 +1,11 @@
+package com.solvia.assistantrh.dto.document;
+
+import com.solvia.assistantrh.entity.enums.DocumentType;
+
+import java.time.Instant;
+
+/**
+ * Métadonnées d'un document. Le chemin de stockage n'est jamais exposé.
+ */
+public record DocumentResponse(Long id, Long candidateId, String filename, DocumentType type, Instant createdAt) {
+}
