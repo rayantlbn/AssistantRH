@@ -1,7 +1,7 @@
 # Cahier des charges — Assistant RH (Phase 1 : MVP)
 
 > Ce document traduit le [MVP](mvp.md) en exigences vérifiables.
-> Le modèle de données détaillé sera défini dans `domain.md` et l'architecture technique dans `architecture.md`.
+> Le modèle de données est défini dans [domain.md](domain.md). L'architecture technique sera décrite dans `architecture.md`.
 
 ---
 
@@ -45,10 +45,10 @@ Codes de priorité : **M** = Must Have, **S** = Should Have, **C** = Could Have 
 
 | ID | Exigence |
 |----|----------|
-| OFF-01 | Créer une offre avec : intitulé (obligatoire), description, lieu, type de contrat (CDI, CDD, stage, freelance, autre). |
+| OFF-01 | Créer une offre avec : intitulé (obligatoire), description, lieu, type de contrat (CDI, CDD, stage, freelance, autre). Seul l'intitulé est obligatoire. |
 | OFF-02 | Une offre a un statut : **Brouillon**, **Ouverte** ou **Clôturée**. |
 | OFF-03 | Modifier une offre tant qu'elle n'est pas clôturée. |
-| OFF-04 | Clôturer une offre ; ses candidatures restent consultables. |
+| OFF-04 | Clôturer une offre ; ses candidatures restent consultables et leur statut reste modifiable. Une offre clôturée peut être rouverte. Une offre ne revient jamais au statut Brouillon. |
 | OFF-05 | Lister les offres, filtrables par statut. |
 | OFF-06 | Une offre qui a des candidatures ne peut pas être supprimée, seulement clôturée. |
 
@@ -66,13 +66,13 @@ Codes de priorité : **M** = Must Have, **S** = Should Have, **C** = Could Have 
 
 | ID | Exigence |
 |----|----------|
-| APP-01 | Associer un candidat existant à une offre ouverte. Cela crée une candidature. |
-| APP-02 | Un candidat ne peut avoir qu'une seule candidature par offre. |
+| APP-01 | Associer un candidat existant à une offre au statut Ouverte. Cela crée une candidature. |
+| APP-02 | Un candidat ne peut avoir qu'une seule candidature par offre, quel que soit son statut. Un candidat refusé qui se représente sur le même poste voit sa candidature existante rouverte. |
 | APP-03 | Un candidat peut postuler à plusieurs offres. |
 | APP-04 | Une candidature a un statut parmi : **Nouveau**, **Présélectionné**, **Entretien**, **Offre**, **Embauché**, **Refusé**. |
 | APP-05 | Une nouvelle candidature est créée au statut **Nouveau**. |
 | APP-06 | Le statut peut être changé librement vers n'importe quel autre (pas de workflow imposé au MVP). **Embauché** et **Refusé** sont des statuts finaux, mais réversibles en cas d'erreur. |
-| APP-07 | Chaque changement de statut est horodaté (date du dernier changement conservée). |
+| APP-07 | La date du dernier changement de statut est conservée. L'historique complet des changements n'est pas conservé au MVP. |
 
 ### 3.5 Tableau de bord et fiches détail — M5, M6
 
@@ -87,9 +87,9 @@ Codes de priorité : **M** = Must Have, **S** = Should Have, **C** = Could Have 
 
 | ID | Exigence |
 |----|----------|
-| ITW-01 | Planifier un entretien lié à une candidature : date et heure, type (téléphone, visio, sur site), participants. |
-| ITW-02 | Saisir un compte rendu et un avis (favorable, réservé, défavorable) après l'entretien. |
-| COM-01 | Ajouter un commentaire interne horodaté et signé sur une candidature. Les commentaires ne sont jamais visibles par le candidat. |
+| ITW-01 | Planifier un entretien lié à une candidature : date et heure, type (téléphone, visio, sur site), participants (noms en texte libre). La planification ne modifie pas le statut de la candidature. Aucun nouvel entretien sur une candidature Embauché ou Refusé. |
+| ITW-02 | Une fois l'entretien passé, saisir un avis (favorable, réservé, défavorable) et un compte rendu libre. L'avis est obligatoire dès qu'un compte rendu est saisi. Un avis par participant est reporté à l'arrivée de la connexion. |
+| COM-01 | Ajouter un commentaire interne horodaté sur une candidature. Les commentaires ne sont jamais visibles par le candidat. L'auteur du commentaire sera enregistré à l'arrivée de la connexion. |
 | SRC-01 | Rechercher un candidat par nom, prénom ou email. |
 | SRC-02 | Filtrer les candidatures par offre et par statut. |
 | USR-01 | Un administrateur peut créer des comptes membres pour son entreprise. |
