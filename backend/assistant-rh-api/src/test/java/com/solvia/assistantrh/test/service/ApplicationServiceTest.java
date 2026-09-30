@@ -91,6 +91,29 @@ class ApplicationServiceTest extends ServiceTestSupport {
                 .extracting("code").isEqualTo("JOB_OFFER_NOT_OPEN");
     }
 
+    /** Règle centrale de domain.md (APP-07) : seul un changement effectif de statut met à jour statusChangedAt. */
+    @Test
+    void statusChangedAt_isKeptWhenSameStatus_andUpdatedOnRealChange() {
+        ApplicationResponse created = applicationService.create(
+                new ApplicationCreateRequest(createCandidate(), createOpenJobOffer(), null));
+        assertThat(created.status()).isEqualTo(ApplicationStatus.NEW);
+        assertThat(created.statusChangedAt()).isEqualTo(FIXED_NOW);
+
+        clock.setInstant(FIXED_NOW.plus(Duration.ofHours(1)));
+        ApplicationResponse sameStatus = applicationService.update(created.id(),
+                new ApplicationUpdateRequest(ApplicationStatus.NEW, created.appliedAt()));
+        assertThat(sameStatus.status()).isEqualTo(ApplicationStatus.NEW);
+        assertThat(sameStatus.statusChangedAt()).isEqualTo(FIXED_NOW);
+
+        Instant twoHoursLater = FIXED_NOW.plus(Duration.ofHours(2));
+        clock.setInstant(twoHoursLater);
+        ApplicationResponse realChange = applicationService.update(created.id(),
+                new ApplicationUpdateRequest(ApplicationStatus.INTERVIEW, created.appliedAt()));
+        assertThat(realChange.status()).isEqualTo(ApplicationStatus.INTERVIEW);
+        assertThat(realChange.statusChangedAt()).isEqualTo(twoHoursLater);
+        assertThat(applicationService.findById(created.id()).statusChangedAt()).isEqualTo(twoHoursLater);
+    }
+
     @Test
     void update_statusChange_updatesStatusChangedAt() {
         ApplicationResponse created = applicationService.create(

@@ -13,6 +13,8 @@ import com.solvia.assistantrh.service.ApplicationService;
 import com.solvia.assistantrh.service.InterviewService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Duration;
@@ -71,6 +73,14 @@ class InterviewServiceTest extends ServiceTestSupport {
     }
 
     @Test
+    void feedback_onFutureInterview_isRefused() {
+        assertThatThrownBy(() -> interviewService.create(
+                new InterviewRequest(applicationId, TOMORROW, InterviewType.VIDEO, null, "Compte rendu anticipé", InterviewOutcome.FAVORABLE)))
+                .isInstanceOf(InvalidRequestException.class)
+                .extracting("code").isEqualTo("INTERVIEW_NOT_HELD");
+    }
+
+    @Test
     void outcome_onFutureInterview_isRefused() {
         assertThatThrownBy(() -> interviewService.create(
                 new InterviewRequest(applicationId, TOMORROW, InterviewType.VIDEO, null, null, InterviewOutcome.FAVORABLE)))
@@ -88,9 +98,10 @@ class InterviewServiceTest extends ServiceTestSupport {
                 .extracting("code").isEqualTo("OUTCOME_REQUIRED");
     }
 
-    @Test
-    void create_onRejectedApplication_isRefused() {
-        applicationService.update(applicationId, new ApplicationUpdateRequest(ApplicationStatus.REJECTED, FIXED_NOW));
+    @ParameterizedTest(name = "candidature {0}")
+    @EnumSource(value = ApplicationStatus.class, names = {"HIRED", "REJECTED"})
+    void create_onFinishedApplication_isRefused(ApplicationStatus finalStatus) {
+        applicationService.update(applicationId, new ApplicationUpdateRequest(finalStatus, FIXED_NOW));
 
         assertThatThrownBy(() -> interviewService.create(
                 new InterviewRequest(applicationId, TOMORROW, InterviewType.PHONE, null, null, null)))

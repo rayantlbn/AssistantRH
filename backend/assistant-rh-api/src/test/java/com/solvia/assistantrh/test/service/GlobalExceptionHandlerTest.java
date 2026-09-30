@@ -4,6 +4,7 @@ import com.solvia.assistantrh.exception.ApiError;
 import com.solvia.assistantrh.exception.BusinessRuleException;
 import com.solvia.assistantrh.exception.DuplicateApplicationException;
 import com.solvia.assistantrh.exception.GlobalExceptionHandler;
+import com.solvia.assistantrh.exception.InvalidRequestException;
 import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,6 +46,16 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody().code()).isEqualTo("RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void invalidRequest_returns400_withItsCode() {
+        ResponseEntity<ApiError> response = handler.handleInvalidRequest(
+                new InvalidRequestException("OUTCOME_REQUIRED", "Un avis est obligatoire dès qu'un compte rendu est saisi."));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(
+                new ApiError("OUTCOME_REQUIRED", "Un avis est obligatoire dès qu'un compte rendu est saisi."));
     }
 
     @Test
