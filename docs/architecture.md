@@ -104,7 +104,17 @@ Le suffixe `Entity` évite les collisions avec des noms courants (`Document` exi
 
 Relations JPA :
 
-- Toutes les relations sont des `@ManyToOne(fetch = LAZY)` du côté enfant (ex. `ApplicationEntity.candidate`). Pas de collection `@OneToMany` par défaut : les listes s'obtiennent par requête (`findByCandidateId`).
+- Les 7 relations sont bidirectionnelles :
+
+  | Parent (`@OneToMany(mappedBy = …)`) | Enfant (`@ManyToOne(fetch = LAZY)`) |
+  |---|---|
+  | `CompanyEntity.candidates`, `CompanyEntity.jobOffers` | `CandidateEntity.company`, `JobOfferEntity.company` |
+  | `CandidateEntity.applications`, `CandidateEntity.documents` | `ApplicationEntity.candidate`, `DocumentEntity.candidate` |
+  | `JobOfferEntity.applications` | `ApplicationEntity.jobOffer` |
+  | `ApplicationEntity.interviews`, `ApplicationEntity.comments` | `InterviewEntity.application`, `CommentEntity.application` |
+
+- Le côté `@ManyToOne` porte la clé étrangère et fait foi. Pour créer un lien, le service renseigne toujours le `@ManyToOne` (`application.setCandidate(...)`) : ajouter un élément à une collection ne sauvegarde rien.
+- Les collections `@OneToMany` sont en lecture, paresseuses, sans cascade JPA ni `orphanRemoval`. Pour les listes paginées de l'API, on passe par une requête du repository (`findByCandidateId(..., Pageable)`), pas par la collection, qui chargerait tous les éléments.
 - Les suppressions en cascade décrites dans [domain.md](domain.md) sont portées par les clés étrangères (`@OnDelete(action = CASCADE)`), pour que la base reste cohérente même en cas de suppression directe.
 - Les fichiers sur disque ne sont pas concernés par la cascade SQL : le service qui supprime un candidat ou un document supprime aussi les fichiers, une fois la transaction validée.
 
@@ -477,13 +487,15 @@ Toutes les entités ont deux dates techniques :
 
 Elles sont portées par une classe commune `BaseEntity` (`@MappedSuperclass`) dont héritent toutes les entités, avec l'id. Les valeurs sont posées automatiquement par Hibernate (`@CreationTimestamp`, `@UpdateTimestamp`) : ni le service ni le client ne les renseignent.
 
+À la création d'une candidature, `appliedAt` (s'il n'est pas fourni) et `statusChangedAt` prennent l'instant lu par `ApplicationService` via le `Clock` de l'application, juste avant l'enregistrement. `createdAt` est posé ensuite par Hibernate : les valeurs peuvent différer de quelques microsecondes. C'est accepté ; aucune requête supplémentaire n'est faite pour forcer l'égalité.
+
 Ne pas confondre avec les dates métier de [domain.md](domain.md) :
 
 | Champ | Nature | Mis à jour quand |
 |-------|--------|------------------|
 | `updatedAt` (toutes les entités) | Technique | N'importe quelle modification de la ligne, quel que soit le champ |
 | `statusChangedAt` (Application) | Métier | Uniquement quand le statut change réellement (APP-07). Réenregistrer le même statut ne le modifie pas |
-| `appliedAt` (Application) | Métier | Date réelle de la candidature. Vaut la date de création par défaut et peut être corrigée (APP-08) |
+| `appliedAt` (Application) | Métier | Date réelle de la candidature. Par défaut, l'instant de création lu par `ApplicationService` ; peut être corrigée (APP-08) |
 | `date` (Interview) | Métier | Date de l'entretien, choisie par l'utilisateur |
 
 Exemples :

@@ -120,8 +120,8 @@ La candidature d'un candidat sur une offre donnée. C'est l'entité de jointure 
 |----------|-----------|---------|:-----------:|-------------|
 | id | Long | `id BIGINT` | oui | clé primaire |
 | status | ApplicationStatus | `status VARCHAR(20)` | oui | `NEW` à la création |
-| appliedAt | Instant | `applied_at TIMESTAMPTZ` | oui | date réelle de la candidature (ex. réception du CV). Par défaut, date de création ; modifiable ; jamais dans le futur |
-| statusChangedAt | Instant | `status_changed_at TIMESTAMPTZ` | oui | date du dernier changement de statut, égale à la date de création de la candidature à l'insertion |
+| appliedAt | Instant | `applied_at TIMESTAMPTZ` | oui | date réelle de la candidature (ex. réception du CV). Par défaut, instant de création lu par le service ; modifiable ; jamais dans le futur |
+| statusChangedAt | Instant | `status_changed_at TIMESTAMPTZ` | oui | date du dernier changement de statut. À la création, instant de création lu par le service |
 | candidate | Candidate | `candidate_id BIGINT` | oui | clé étrangère |
 | jobOffer | JobOffer | `job_offer_id BIGINT` | oui | clé étrangère |
 
@@ -141,6 +141,8 @@ Contrainte d'unicité : `(candidate_id, job_offer_id)`.
 Il n'y a pas de workflow imposé : on peut passer de n'importe quel statut à n'importe quel autre, y compris sortir d'un statut final pour corriger une erreur.
 
 `appliedAt` et `createdAt` sont distincts : un recruteur saisit souvent une candidature après coup (CV reçu la semaine dernière, entré dans l'outil aujourd'hui). `appliedAt` donne la vraie date, qui sert à trier les candidatures par ancienneté et, plus tard, à mesurer le délai de recrutement. `createdAt` reste la date de saisie dans l'outil.
+
+Ces valeurs par défaut sont posées par le service à partir d'une même lecture de l'horloge, juste avant l'enregistrement. Elles peuvent différer de quelques microsecondes de `createdAt`, posé par Hibernate : c'est accepté.
 
 `statusChangedAt` est mis à jour par le serveur à chaque changement effectif de statut. Réenregistrer le même statut ne le modifie pas. Seul le dernier changement est conservé, pas l'historique.
 
