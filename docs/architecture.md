@@ -196,7 +196,7 @@ Un `appliedAt` dans le futur renvoie un 400 (APP-08).
 |---------|-------|------|---------|
 | GET | `/api/dashboard/job-offers` | Offres `OPEN` avec le nombre de candidatures par statut (DSH-01) | 200 |
 
-Ce n'est pas une ressource CRUD mais une vue de lecture. Les comptages sont calculés en une seule requête SQL groupée, pas en chargeant les candidatures. Réponse paginée, triée par titre (le tri demandé est ignoré), chaque ligne contenant `jobOfferId`, `title`, `newCount`, `interviewCount`, `hiredCount`, `rejectedCount`.
+Ce n'est pas une ressource CRUD mais une vue de lecture. Les comptages sont calculés en une seule requête SQL groupée, pas en chargeant les candidatures. Réponse paginée, triée par titre (le tri demandé est ignoré), chaque ligne contenant `jobOfferId`, `title` et un compteur pour chacun des 6 statuts : `newCount`, `shortlistedCount`, `interviewCount`, `offerCount`, `hiredCount`, `rejectedCount`. Aucune candidature n'échappe aux compteurs : leur somme est le nombre total de candidatures de l'offre.
 
 ### Interviews
 

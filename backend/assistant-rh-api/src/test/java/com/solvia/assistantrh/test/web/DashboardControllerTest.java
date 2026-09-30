@@ -11,16 +11,14 @@ import java.time.Instant;
 
 class DashboardControllerTest extends WebTestSupport {
 
+    /** Les 6 statuts sont comptés : 1 NEW, 2 SHORTLISTED, 1 INTERVIEW, 1 OFFER, 1 HIRED, 3 REJECTED = 9 candidatures. */
     @Test
-    void jobOffers_countsApplicationsByStatus() throws Exception {
+    void jobOffers_countsApplicationsForAllSixStatuses() throws Exception {
         long offerId = createOpenJobOffer("ZZ Dashboard");
         createApplication(createCandidate(), offerId);
-        long interview = createApplication(createCandidate(), offerId);
-        long hired = createApplication(createCandidate(), offerId);
-        long rejected = createApplication(createCandidate(), offerId);
-        setStatus(interview, "INTERVIEW");
-        setStatus(hired, "HIRED");
-        setStatus(rejected, "REJECTED");
+        for (String status : new String[]{"SHORTLISTED", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED", "REJECTED", "REJECTED", "REJECTED"}) {
+            setStatus(createApplication(createCandidate(), offerId), status);
+        }
         long emptyOfferId = createOpenJobOffer("ZZ Dashboard vide");
 
         String offer = "$.content[?(@.jobOfferId == " + offerId + ")]";
@@ -29,10 +27,29 @@ class DashboardControllerTest extends WebTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(offer + ".title", contains("ZZ Dashboard")))
                 .andExpect(jsonPath(offer + ".newCount", contains(1)))
+                .andExpect(jsonPath(offer + ".shortlistedCount", contains(2)))
                 .andExpect(jsonPath(offer + ".interviewCount", contains(1)))
+                .andExpect(jsonPath(offer + ".offerCount", contains(1)))
                 .andExpect(jsonPath(offer + ".hiredCount", contains(1)))
-                .andExpect(jsonPath(offer + ".rejectedCount", contains(1)))
-                .andExpect(jsonPath(empty + ".newCount", contains(0)));
+                .andExpect(jsonPath(offer + ".rejectedCount", contains(3)))
+                .andExpect(jsonPath(empty + ".newCount", contains(0)))
+                .andExpect(jsonPath(empty + ".shortlistedCount", contains(0)))
+                .andExpect(jsonPath(empty + ".offerCount", contains(0)));
+    }
+
+    /** Contrat figé pour le frontend : exactement ces champs, dans cet ordre. */
+    @Test
+    void jobOffers_responseContract() throws Exception {
+        long offerId = createOpenJobOffer("ZZ Contrat");
+
+        String body = mockMvc.perform(get("/api/dashboard/job-offers").param("size", "100"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        java.util.Map<String, Object> row = com.jayway.jsonpath.JsonPath.<java.util.List<java.util.Map<String, Object>>>read(
+                body, "$.content[?(@.jobOfferId == " + offerId + ")]").get(0);
+
+        org.assertj.core.api.Assertions.assertThat(row.keySet()).containsExactly(
+                "jobOfferId", "title", "newCount", "shortlistedCount", "interviewCount", "offerCount", "hiredCount", "rejectedCount");
     }
 
     @Test

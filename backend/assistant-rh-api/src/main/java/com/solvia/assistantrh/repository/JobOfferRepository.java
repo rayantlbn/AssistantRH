@@ -20,7 +20,7 @@ public interface JobOfferRepository extends JpaRepository<JobOfferEntity, Long> 
     Page<JobOfferEntity> findAllByCompanyIdAndStatus(Long companyId, JobOfferStatus status, Pageable pageable);
 
     /**
-     * Tableau de bord (DSH-01) : offres ouvertes avec le nombre de candidatures par statut,
+     * Tableau de bord (DSH-01) : offres ouvertes avec le nombre de candidatures pour chacun des 6 statuts,
      * calculé en une seule requête groupée, sans charger les candidatures.
      */
     @Query(value = """
@@ -28,7 +28,9 @@ public interface JobOfferRepository extends JpaRepository<JobOfferEntity, Long> 
                 j.id,
                 j.title,
                 coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.NEW then 1 else 0 end), 0),
+                coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.SHORTLISTED then 1 else 0 end), 0),
                 coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.INTERVIEW then 1 else 0 end), 0),
+                coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.OFFER then 1 else 0 end), 0),
                 coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.HIRED then 1 else 0 end), 0),
                 coalesce(sum(case when a.status = com.solvia.assistantrh.entity.enums.ApplicationStatus.REJECTED then 1 else 0 end), 0))
             from JobOfferEntity j left join j.applications a

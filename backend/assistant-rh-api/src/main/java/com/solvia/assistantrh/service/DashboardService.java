@@ -19,7 +19,7 @@ public class DashboardService {
     private final CurrentCompanyProvider currentCompanyProvider;
 
     /**
-     * Offres ouvertes avec leurs compteurs de candidatures (DSH-01), triées par titre.
+     * Offres ouvertes avec leurs compteurs de candidatures pour les 6 statuts (DSH-01), triées par titre.
      * Le tri demandé par l'appelant est ignoré : la requête est groupée par offre.
      */
     @Transactional(readOnly = true)
