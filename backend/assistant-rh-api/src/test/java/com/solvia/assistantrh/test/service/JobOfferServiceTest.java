@@ -8,10 +8,12 @@ import com.solvia.assistantrh.entity.enums.JobOfferStatus;
 import com.solvia.assistantrh.exception.BusinessRuleException;
 import com.solvia.assistantrh.exception.ResourceNotFoundException;
 import com.solvia.assistantrh.service.ApplicationService;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,6 +23,12 @@ class JobOfferServiceTest extends ServiceTestSupport {
     @Autowired
     private ApplicationService applicationService;
 
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Test
     void create_isAlwaysDraft() {
         JobOfferResponse created = jobOfferService.create(
@@ -29,6 +37,21 @@ class JobOfferServiceTest extends ServiceTestSupport {
         assertThat(created.status()).isEqualTo(JobOfferStatus.DRAFT);
         assertThat(created.title()).isEqualTo("Développeur Java");
         assertThat(created.contractType()).isEqualTo(ContractType.PERMANENT);
+    }
+
+    /** Le statut envoyé à la création est ignoré : la ligne écrite en base est en DRAFT, pas seulement la réponse. */
+    @Test
+    void create_requestContainsOpenStatus_offerStillStartsAsDraft() {
+        JobOfferResponse created = jobOfferService.create(
+                new JobOfferRequest("Développeur Java", null, "Rabat", ContractType.PERMANENT, JobOfferStatus.OPEN));
+        entityManager.flush();
+        entityManager.clear();
+
+        String persistedStatus = jdbcTemplate.queryForObject(
+                "select status from job_offers where id = ?", String.class, created.id());
+
+        assertThat(persistedStatus).isEqualTo("DRAFT");
+        assertThat(jobOfferService.findById(created.id()).status()).isEqualTo(JobOfferStatus.DRAFT);
     }
 
     @Test
