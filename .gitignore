@@ -31,3 +31,6 @@ build/
 .env
 .env.*
 !.env.example
+
+### Fichiers uploadés (données personnelles) ###
+uploads/

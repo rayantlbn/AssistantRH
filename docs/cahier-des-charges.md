@@ -73,6 +73,7 @@ Codes de priorité : **M** = Must Have, **S** = Should Have, **C** = Could Have 
 | APP-05 | Une nouvelle candidature est créée au statut **Nouveau**. |
 | APP-06 | Le statut peut être changé librement vers n'importe quel autre (pas de workflow imposé au MVP). **Embauché** et **Refusé** sont des statuts finaux, mais réversibles en cas d'erreur. |
 | APP-07 | La date du dernier changement de statut est conservée. L'historique complet des changements n'est pas conservé au MVP. |
+| APP-08 | La date de candidature peut être saisie à la création (date du jour par défaut) et corrigée ensuite, pour les candidatures reçues avant leur saisie dans l'outil. Elle ne peut pas être dans le futur. |
 
 ### 3.5 Tableau de bord et fiches détail — M5, M6
 
